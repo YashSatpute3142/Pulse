@@ -1,0 +1,69 @@
+/* Pulse design tokens v1.2. Owner: Chat 01. Do not edit values without Chat 00 approval.
+   Dark is the default. Light is applied with <html data-theme="light">. */
+:root {
+  color-scheme: dark;
+
+  /* surfaces: canvas < s1 < s2 < s3 */
+  --canvas: #121211;
+  --s1: #181817;            /* panels, sidebars */
+  --s2: #1F1F1D;            /* cards, own-message blocks, inputs */
+  --s3: #272725;            /* hover, selected */
+  --border: #2E2E2B;        /* dividers and card outlines only */
+  --border-strong: #3D3D39; /* decorative emphasis only */
+  --control: #6C6962;       /* borders of interactive controls (>= 3:1) */
+
+  --text: #ECE9E2;
+  --text-muted: #A19D94;
+  --text-faint: #89867E;    /* never on --s3 */
+
+  --accent: #FF6A3D;        /* fills, rules, focus ring, unread pill */
+  --accent-hover: #FF8259;
+  --accent-text: #FF6A3D;   /* ember used as text */
+  --accent-soft: rgb(255 106 61 / 0.14);
+  --on-accent: #1A0F0A;
+
+  --live: #4ADE9A;
+  --away: #F2B84B;
+  --danger: #F15A57;
+  --offline: #6F6C65;
+
+  /* avatar tints (flat). Initials use --text. */
+  --av-1: #34463F; --av-2: #4A3E36; --av-3: #3B4056;
+  --av-4: #4A3C48; --av-5: #434733; --av-6: #34454C;
+
+  --elev-float: 0 8px 24px rgb(0 0 0 / 0.35);
+  --scrim: rgb(0 0 0 / 0.55);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --canvas: #F6F4EF;
+  --s1: #FBFAF7;
+  --s2: #F0EDE6;
+  --s3: #E7E3DA;
+  --border: #DDD8CC;
+  --border-strong: #C9C3B5;
+  --control: #8C867A;
+
+  --text: #1B1A17;
+  --text-muted: #5F5B52;
+  --text-faint: #706B61;
+
+  --accent: #D44519;
+  --accent-hover: #BF3C14;
+  --accent-text: #B03915;
+  --accent-soft: rgb(217 70 26 / 0.10);
+  --on-accent: #FFFFFF;
+
+  --live: #177B4F;
+  --away: #B1751E;
+  --danger: #C53835;
+  --offline: #8C867A;
+
+  --av-1: #CFE0D6; --av-2: #E6D3C6; --av-3: #D3D8E8;
+  --av-4: #E3D0DD; --av-5: #DDE0C8; --av-6: #CBDDE3;
+
+  --elev-float: 0 8px 24px rgb(40 30 10 / 0.12);
+  --scrim: rgb(20 15 5 / 0.4);
+}
