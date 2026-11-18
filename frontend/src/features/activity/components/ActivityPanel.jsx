@@ -1,8 +1,8 @@
-import { PanelRightClose, Radio } from 'lucide-react';
-import { EmptyState } from '../../../components/common/EmptyState.jsx';
+import { PanelRightClose } from 'lucide-react';
 import { IconButton } from '../../../components/ui/IconButton.jsx';
+import { ActivityList } from './ActivityList.jsx';
 
-/** Right "Live now" panel (320 docked >= 1280, same content in the drawer below). Phase 4 supplies real data. */
+/** Right "Live now" panel (320 docked >= 1280, same content in the drawer below). Scrolls on its own. */
 export function ActivityPanel({ onCollapse, showHeader = true }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -12,7 +12,7 @@ export function ActivityPanel({ onCollapse, showHeader = true }) {
           {onCollapse && <IconButton label="Hide live activity" onClick={onCollapse} tooltip={false}><PanelRightClose size={18} strokeWidth={1.5} aria-hidden="true" /></IconButton>}
         </div>
       )}
-      <EmptyState icon={Radio} title="Live activity" description="Friends' activity appears here once presence and activity are connected (Phase 4)." />
+      <div className="min-h-0 flex-1 overflow-y-auto"><ActivityList /></div>
     </div>
   );
 }

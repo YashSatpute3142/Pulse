@@ -4,6 +4,8 @@ import { ThemeProvider } from './theme/ThemeProvider.jsx';
 import { ThemeSync } from './theme/ThemeSync.jsx';
 import { AuthProvider } from '../features/auth/AuthProvider.jsx';
 import { SocketProvider } from '../socket/SocketProvider.jsx';
+import { MessagingProvider } from '../features/messages/MessagingProvider.jsx';
+import { PresenceReporter } from '../features/presence/PresenceReporter.jsx';
 import { ToastProvider } from '../components/ui/Toast.jsx';
 import { ErrorBoundary } from '../components/common/ErrorBoundary.jsx';
 import { createQueryClient } from './queryClient.js';
@@ -17,7 +19,10 @@ export function Providers({ children }) {
           <AuthProvider>
             <ThemeSync />
             <SocketProvider>
-              <ToastProvider>{children}</ToastProvider>
+              <PresenceReporter />
+              <MessagingProvider>
+                <ToastProvider>{children}</ToastProvider>
+              </MessagingProvider>
             </SocketProvider>
           </AuthProvider>
         </QueryClientProvider>

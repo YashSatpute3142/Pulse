@@ -1,10 +1,12 @@
 import { NavLink, matchPath, useLocation } from 'react-router-dom';
 import { NAV_ITEMS } from './navItems.js';
 import { CountPill } from '../components/ui/CountPill.jsx';
+import { useUnreadTotal } from '../features/conversations/hooks/useConversations.js';
 import { cx } from '../utils/cx.js';
 
 /** Mobile bottom tabs: 56 + safe area, --s1, top border. Icon 22, 11px label, 2px ember bar on the selected top edge. */
-export function TabBar({ unreadMessages = 0 }) {
+export function TabBar() {
+  const unreadMessages = useUnreadTotal();
   const { pathname } = useLocation();
   return (
     <nav aria-label="Primary" className="pb-safe flex shrink-0 border-t border-line bg-s1">

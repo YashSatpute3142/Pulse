@@ -46,11 +46,16 @@ export function routeFetch(handlers) {
   return fn;
 }
 
-/** matchMedia stub driven by a viewport width. */
-export function setViewport(width) {
+/** matchMedia stub driven by a viewport width. Narrow viewports behave like touch devices (coarse pointer, no hover). */
+export function setViewport(width, { touch = width < 768 } = {}) {
   window.matchMedia = (query) => {
     const min = /min-width:\s*(\d+)px/.exec(query);
-    const matches = min ? width >= Number(min[1]) : false;
+    let matches = false;
+    if (min) matches = width >= Number(min[1]);
+    else if (/pointer:\s*fine/.test(query)) matches = !touch;
+    else if (/pointer:\s*coarse/.test(query)) matches = touch;
+    else if (/hover:\s*none/.test(query)) matches = touch;
+    else if (/hover:\s*hover/.test(query)) matches = !touch;
     return { matches, media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, dispatchEvent() { return false; } };
   };
 }

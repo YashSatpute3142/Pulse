@@ -2,13 +2,19 @@ import { S2C } from '../../constants/eventTypes.js';
 import { queryKeys } from '../../api/queryKeys.js';
 import { tokenStore } from '../../api/tokenStore.js';
 import { sessionEvents } from '../../api/sessionEvents.js';
+import { registerPresenceHandlers } from './presence.js';
+import { applyActivityChanged } from '../../features/activity/cache.js';
 
 /**
  * Event -> TanStack Query cache. Phase 2 only wires session-level events.
- * Message/presence/activity/room handlers are added by the phases that own them (3, 4, 5).
+ * Messaging handlers live in handlers/messages.js (registered by MessagingProvider). Presence/activity/rooms: Phases 4 and 5.
  */
-export function registerSocketHandlers(bus) {
+export function registerSocketHandlers(bus, queryClient, { getMeId = () => null } = {}) {
   return [
+    bus.subscribe(S2C.ACTIVITY_CHANGED, (p) => applyActivityChanged(queryClient, p || {}, getMeId())),
+    ...registerPresenceHandlers(bus, queryClient),
+    // Friend changes (requests, accepts, removals) refresh the friends lists.
+    bus.subscribe(S2C.FRIEND_UPDATED, () => queryClient.invalidateQueries({ queryKey: queryKeys.friends.all() })),
     bus.subscribe(S2C.SESSION_REVOKED, () => {
       tokenStore.clear();
       sessionEvents.emit('expired', 'revoked');

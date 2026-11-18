@@ -41,7 +41,7 @@ describe('boot and guards', () => {
   });
 
   it('logged-in boot lands on Home inside the shell; the token stays out of web storage', async () => {
-    routeFetch({ 'POST /auth/refresh': session, 'POST /auth/ws-ticket': { data: { ticket: 't', expiresInSec: 30 } } });
+    routeFetch({ 'POST /auth/refresh': session, 'POST /auth/ws-ticket': { data: { ticket: 't', expiresInSec: 30 } }, 'GET /conversations': { data: [], meta: { hasMore: false } } });
     renderAt('/');
     expect(await screen.findByRole('heading', { level: 1, name: /Aarav/ })).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument();
@@ -51,7 +51,7 @@ describe('boot and guards', () => {
   });
 
   it('a logged-in user visiting /login is sent to Home', async () => {
-    routeFetch({ 'POST /auth/refresh': session, 'POST /auth/ws-ticket': { data: { ticket: 't', expiresInSec: 30 } } });
+    routeFetch({ 'POST /auth/refresh': session, 'POST /auth/ws-ticket': { data: { ticket: 't', expiresInSec: 30 } }, 'GET /conversations': { data: [], meta: { hasMore: false } } });
     const router = renderAt('/login');
     await screen.findByRole('heading', { level: 1, name: /Aarav/ });
     expect(router.state.location.pathname).toBe('/');
@@ -66,7 +66,7 @@ describe('boot and guards', () => {
   });
 
   it('unknown route inside the shell renders NotFound', async () => {
-    routeFetch({ 'POST /auth/refresh': session, 'POST /auth/ws-ticket': { data: { ticket: 't', expiresInSec: 30 } } });
+    routeFetch({ 'POST /auth/refresh': session, 'POST /auth/ws-ticket': { data: { ticket: 't', expiresInSec: 30 } }, 'GET /conversations': { data: [], meta: { hasMore: false } } });
     renderAt('/nope/nothing');
     expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
   });
@@ -132,6 +132,7 @@ describe('login and logout', () => {
       'POST /auth/refresh': session,
       'POST /auth/ws-ticket': { data: { ticket: 't', expiresInSec: 30 } },
       'POST /auth/logout': new Response(null, { status: 204 }),
+      'GET /conversations': { data: [], meta: { hasMore: false } },
     });
     const router = renderAt('/settings');
     await screen.findByRole('heading', { level: 1, name: 'Settings' });
@@ -145,7 +146,7 @@ describe('login and logout', () => {
 });
 
 describe('shell by breakpoint', () => {
-  const ok = { 'POST /auth/refresh': session, 'POST /auth/ws-ticket': { data: { ticket: 't', expiresInSec: 30 } } };
+  const ok = { 'POST /auth/refresh': session, 'POST /auth/ws-ticket': { data: { ticket: 't', expiresInSec: 30 } }, 'GET /conversations': { data: [], meta: { hasMore: false } } };
 
   it('desktop shows the nav rail with five destinations, Home selected', async () => {
     routeFetch(ok); setViewport(1440);

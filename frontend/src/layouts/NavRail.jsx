@@ -7,6 +7,7 @@ import { CountPill } from '../components/ui/CountPill.jsx';
 import { Avatar } from '../components/ui/Avatar.jsx';
 import { useAuth } from '../features/auth/useAuth.js';
 import { useSocket } from '../socket/useSocket.js';
+import { useUnreadTotal } from '../features/conversations/hooks/useConversations.js';
 import { cx } from '../utils/cx.js';
 
 function RailItem({ to, label, icon: Icon, active, end, badge }) {
@@ -27,7 +28,8 @@ function RailItem({ to, label, icon: Icon, active, end, badge }) {
 }
 
 /** Nav rail 64: mark 32 top, five icon buttons 44x44, settings + own avatar bottom. Icons only, tooltip + aria-label. */
-export function NavRail({ unreadMessages = 0 }) {
+export function NavRail() {
+  const unreadMessages = useUnreadTotal();
   const { pathname } = useLocation();
   const { user } = useAuth();
   const { status } = useSocket();

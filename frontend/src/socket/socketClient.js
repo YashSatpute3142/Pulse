@@ -26,7 +26,7 @@ export function parseServerTime(v) {
  *
  * deps: { getTicket, getUrl, bus, onStatus, onFinal, getRegisterPayload, WebSocketImpl? }
  */
-export function createSocketClient({ getTicket, getUrl, bus, onStatus, onFinal, onReady, getRegisterPayload, WebSocketImpl }) {
+export function createSocketClient({ getTicket, getUrl, bus, onStatus, onFinal, onReady, onRegistered, getRegisterPayload, WebSocketImpl }) {
   const WS = WebSocketImpl || globalThis.WebSocket;
   let ws = null;
   let status = 'idle';
@@ -104,7 +104,12 @@ export function createSocketClient({ getTicket, getUrl, bus, onStatus, onFinal, 
         attempt = 0;
         setStatus('open');
         startHeartbeat();
-        try { sendRaw(C2S.REGISTER, getRegisterPayload?.() || {}); } catch { /* ignore */ }
+        try {
+          // REGISTER's ACK carries the presence snapshot (protocol 4); hand it to onRegistered.
+          const id = sendRaw(C2S.REGISTER, getRegisterPayload?.() || {});
+          const timer = setTimeout(() => pending.delete(id), 10000);
+          pending.set(id, { resolve: (data) => onRegistered?.(data), reject: () => {}, timer });
+        } catch { /* ignore */ }
         onReady?.({ reconnect, userId: payload.userId });
         return;
       }
