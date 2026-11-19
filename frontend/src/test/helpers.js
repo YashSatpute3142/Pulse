@@ -34,10 +34,10 @@ export function routeFetch(handlers) {
   const fn = vi.fn(async (url, init = {}) => {
     const path = new URL(url, 'http://localhost').pathname.replace(/^.*\/api\/v1/, '');
     const key = `${init.method || 'GET'} ${path}`;
-    calls.push({ key, init, body: init.body ? JSON.parse(init.body) : undefined });
+    calls.push({ key, init, body: typeof init.body === 'string' ? JSON.parse(init.body) : init.body });
     const h = handlers[key];
     if (!h) throw new Error(`Unhandled request ${key}`);
-    const r = typeof h === 'function' ? h(init) : h;
+    const r = await (typeof h === 'function' ? h(init) : h);
     if (r instanceof Error) throw r;
     return r instanceof Response ? r : json(200, r);
   });

@@ -11,7 +11,7 @@ export function updateLists(queryClient, fn) {
   });
 }
 
-const preview = (m) => (m.deletedAt ? '' : (m.text || '').slice(0, 120));
+const preview = (m) => (m.deletedAt ? '' : (m.text || (m.type === 'poll' ? 'Poll' : m.attachments?.length ? (m.attachments[0].kind === 'image' ? 'Photo' : 'File') : '')).slice(0, 120));
 
 /** A message was stored: put it in the message cache and refresh the conversation's lastMessage + order. */
 export function applyStoredMessage(queryClient, message) {

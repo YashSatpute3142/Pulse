@@ -4,8 +4,8 @@ import { queryKeys } from '../../../api/queryKeys.js';
 
 export const useActivityFeed = () => useQuery({ queryKey: queryKeys.activity.feed(), queryFn: activityApi.feed, staleTime: 30000 });
 
-/** My own current activity. Not fetchable (no GET /activity/me in the contract): filled by ACTIVITY_CHANGED and by my own updates. */
-export const useMyActivity = () => useQuery({ queryKey: queryKeys.activity.me(), queryFn: () => null, enabled: false, staleTime: Infinity, initialData: null }).data;
+/** My own current activity (GET /activity/me), kept fresh by ACTIVITY_CHANGED for my id and by my own updates. null when none. */
+export const useMyActivity = () => useQuery({ queryKey: queryKeys.activity.me(), queryFn: activityApi.me, staleTime: Infinity, refetchOnWindowFocus: false }).data ?? null;
 
 export function useActivityMutations() {
   const qc = useQueryClient();

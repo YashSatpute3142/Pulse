@@ -4,6 +4,8 @@ import { ReplyQuote } from './ReplyQuote.jsx';
 import { Reactions } from './Reactions.jsx';
 import { Receipt } from './Receipt.jsx';
 import { EditBox } from './EditBox.jsx';
+import { PollCard } from '../polls/PollCard.jsx';
+import { Attachments } from './Attachments.jsx';
 import { MessageToolbar } from './MessageToolbar.jsx';
 import { useLongPress } from '../hooks/useLongPress.js';
 import { clock } from '../../../utils/time.js';
@@ -12,11 +14,17 @@ import { cx } from '../../../utils/cx.js';
 function Body({ message, editing, onSaveEdit, onCancelEdit }) {
   if (message.deletedAt) return <p className="italic text-ink-muted">Message removed</p>;
   if (editing) return <EditBox initial={message.text} onSave={onSaveEdit} onCancel={onCancelEdit} />;
+  if (message.type === 'poll' && message.pollId) return <PollCard pollId={message.pollId} />;
   return (
-    <p className="whitespace-pre-wrap break-words text-[15px] text-ink">
-      {message.text}
-      {message.editedAt && <span className="ml-2 font-mono text-xs text-ink-faint">edited</span>}
-    </p>
+    <>
+      {message.text && (
+        <p className="whitespace-pre-wrap break-words text-[15px] text-ink">
+          {message.text}
+          {message.editedAt && <span className="ml-2 font-mono text-xs text-ink-faint">edited</span>}
+        </p>
+      )}
+      <Attachments items={message.attachments} />
+    </>
   );
 }
 

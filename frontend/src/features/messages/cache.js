@@ -52,9 +52,9 @@ export function toggleReaction(reactions, emoji, userId, add) {
   return list.filter((r) => r.userIds.length);
 }
 
-export function makeOptimistic({ clientId, conversationId, senderId, text, replyTo, now = new Date() }) {
+export function makeOptimistic({ clientId, conversationId, senderId, text, replyTo, attachments = [], now = new Date() }) {
   return {
-    id: tempId(clientId), clientId, conversationId, senderId, type: 'text', text, attachments: [],
+    id: tempId(clientId), clientId, conversationId, senderId, type: 'text', text, attachments,
     replyTo: replyTo ? { id: replyTo.id, senderId: replyTo.senderId, text: (replyTo.text || '').slice(0, 120), type: replyTo.type, deletedAt: replyTo.deletedAt } : null,
     pollId: null, reactions: [], editedAt: null, deletedAt: null, createdAt: now.toISOString(),
     _status: 'sending', _error: null,

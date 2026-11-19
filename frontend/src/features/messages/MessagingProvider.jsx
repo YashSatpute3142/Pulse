@@ -40,11 +40,11 @@ export function MessagingProvider({ children }) {
   }, [queryClient]);
 
   const value = useMemo(() => ({
-    sendMessage({ conversationId, text, replyTo = null }) {
+    sendMessage({ conversationId, text, replyTo = null, attachments = [] }) {
       const clientId = uuid();
-      const optimistic = makeOptimistic({ clientId, conversationId, senderId: meRef.current, text, replyTo });
+      const optimistic = makeOptimistic({ clientId, conversationId, senderId: meRef.current, text, replyTo, attachments });
       queryClient.setQueryData(queryKeys.conversations.messages(conversationId), (d) => upsertMessage(d, optimistic));
-      outbox.enqueue({ conversationId, clientId, payload: { text, ...(replyTo ? { replyTo: replyTo.id } : {}) } });
+      outbox.enqueue({ conversationId, clientId, payload: { text, ...(replyTo ? { replyTo: replyTo.id } : {}), ...(attachments.length ? { attachments } : {}) } });
       return clientId;
     },
     retry: (clientId) => outbox.retry(clientId),

@@ -16,12 +16,14 @@ export const queryKeys = {
   },
   users: { search: (q) => ['users', 'search', q] },
   presence: () => ['presence'],
+  polls: { detail: (id) => ['polls', id] },
   activity: {
     feed: () => ['activity', 'feed'],
     me: () => ['activity', 'me'],
   },
   focusRooms: {
     all: () => ['focus-rooms'],
+    lists: () => ['focus-rooms', 'list'],
     list: (scope) => ['focus-rooms', 'list', scope],
     detail: (id) => ['focus-rooms', 'detail', id],
   },

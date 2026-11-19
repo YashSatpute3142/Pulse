@@ -17,6 +17,7 @@ function backend(feed, extra = {}) {
     'POST /auth/refresh': { data: { user: ME, accessToken: 'AT' } },
     'POST /auth/ws-ticket': { data: { ticket: 't', expiresInSec: 30 } },
     'GET /activity/feed': { data: feed },
+    'GET /activity/me': { data: null },
     'GET /conversations': { data: [], meta: { hasMore: false } },
     ...extra,
   });
@@ -67,6 +68,17 @@ describe('live activity', () => {
     await waitFor(() => expect(fn.calls.filter((c) => c.key === 'GET /activity/feed').length).toBe(before + 1));
     act(() => socket().serverSend('ACTIVITY_CHANGED', { userId: 'u2', activity: null }));
     await waitFor(() => expect(screen.queryByRole('article', { name: /Meera Rao/ })).not.toBeInTheDocument());
+  });
+});
+
+describe('my activity', () => {
+  it('loads from GET /activity/me and follows ACTIVITY_CHANGED for me', async () => {
+    backend([], { 'GET /activity/me': { data: act1('coding', 'Pulse', { userId: 'u1' }) } });
+    renderAt('/activity');
+    expect(await screen.findByRole('article', { name: 'Aarav Kapoor, Coding' })).toBeInTheDocument();
+    await openSocket();
+    act(() => socket().serverSend('ACTIVITY_CHANGED', { userId: 'u1', activity: null }));
+    await waitFor(() => expect(screen.queryByRole('article', { name: /Aarav/ })).not.toBeInTheDocument());
   });
 });
 
