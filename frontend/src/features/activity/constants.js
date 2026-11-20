@@ -23,4 +23,4 @@ export const EXPIRY = [
   { value: '', label: 'Never' }, { value: '30', label: 'In 30 minutes' }, { value: '60', label: 'In 1 hour' },
   { value: '120', label: 'In 2 hours' }, { value: '240', label: 'In 4 hours' },
 ];
-export const MAX_LABEL = 80;
+export const MAX_LABEL = 60; // CONTRACT_DECISIONS A2 (schema maxlength 60)

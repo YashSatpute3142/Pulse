@@ -9,7 +9,7 @@ import { Skeleton } from '../../../components/ui/Skeleton.jsx';
 import { useNow } from '../../../hooks/useNow.js';
 import { clock } from '../../../utils/time.js';
 import { cx } from '../../../utils/cx.js';
-import { isClosed, nextSelection, patchPoll, totalVotes, withVote } from './pollCache.js';
+import { applyServerPoll, isClosed, nextSelection, patchPoll, totalVotes, withVote } from './pollCache.js';
 
 /** Inline poll card, 440 max: question 600, mono sub-line, 36px option bars with an --accent-soft fill (180 ms), mono percent, voted = check + accent border. */
 export function PollCard({ pollId }) {
@@ -30,7 +30,10 @@ export function PollCard({ pollId }) {
     const ids = nextSelection(poll, optionId);
     const before = poll;
     patchPoll(qc, poll.id, (p) => withVote(p, ids));
-    try { await send(C2S.POLL_VOTE, { pollId: poll.id, optionIds: ids }); } catch (e) {
+    try {
+      const ack = await send(C2S.POLL_VOTE, { pollId: poll.id, optionIds: ids }); // { pollId, counts, myVote, closedAt }
+      if (ack?.counts) patchPoll(qc, poll.id, (p) => applyServerPoll(p, ack));
+    } catch (e) {
       patchPoll(qc, poll.id, () => before);
       toast.error(e?.message || 'Your vote was not saved');
     }

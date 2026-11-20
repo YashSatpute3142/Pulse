@@ -3,6 +3,9 @@ import { queryKeys } from '../../../api/queryKeys.js';
 /** Poll { id, question, options[{id,text}], multiple, anonymous, closesAt, closedAt, counts{optionId:n}, myVote[] } */
 export const setPoll = (qc, poll) => poll?.id && qc.setQueryData(queryKeys.polls.detail(poll.id), poll);
 
+/** Server truth for counts / closedAt, and my vote when the server sends it (own other sockets, vote ACK). */
+export const applyServerPoll = (poll, p) => ({ ...poll, counts: p.counts ?? poll.counts, closedAt: p.closedAt !== undefined ? p.closedAt : poll.closedAt, myVote: Array.isArray(p.myVote) ? p.myVote : poll.myVote });
+
 export function patchPoll(qc, pollId, fn) {
   qc.setQueryData(queryKeys.polls.detail(pollId), (p) => (p ? fn(p) : p));
 }

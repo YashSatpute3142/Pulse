@@ -73,7 +73,8 @@ describe('polls', () => {
     expect(sentFrames('POLL_VOTE')[0].payload).toEqual({ pollId: 'p1', optionIds: ['o2'] });
     expect(within(card).getByRole('radio', { name: /Monday/ })).toHaveAttribute('aria-checked', 'true');
     expect(within(card).getByRole('radio', { name: /Monday/ })).toHaveTextContent('40%'); // 2 of 5
-    ackLast('POLL_VOTE', {});
+    ackLast('POLL_VOTE', { pollId: 'p1', counts: { o1: 3, o2: 2 }, myVote: ['o2'], closedAt: null });
+    await waitFor(() => expect(within(card).getByText('5 votes · single choice')).toBeInTheDocument());
   });
 
   it('rolls the vote back and shows an error when the server rejects it', async () => {
@@ -106,6 +107,13 @@ describe('polls', () => {
     act(() => socket().serverSend('POLL_UPDATED', { pollId: 'p1', counts: { o1: 3, o2: 3 }, closedAt: new Date().toISOString() }));
     await waitFor(() => expect(within(card).getByRole('radio', { name: /Monday/ })).toBeDisabled());
     expect(within(card).getByText(/closed/)).toBeInTheDocument();
+  });
+
+  it('POLL_UPDATED with myVote (a copy for my other tab) updates my selection', async () => {
+    withPoll(); await open();
+    const card = await screen.findByRole('group', { name: /Poll:/ });
+    act(() => socket().serverSend('POLL_UPDATED', { pollId: 'p1', counts: { o1: 3, o2: 2 }, closedAt: null, myVote: ['o2'] }));
+    await waitFor(() => expect(within(card).getByRole('radio', { name: /Monday/ })).toHaveAttribute('aria-checked', 'true'));
   });
 
   it('creates a poll: validates, then sends POLL_CREATE with trimmed options and flags', async () => {
