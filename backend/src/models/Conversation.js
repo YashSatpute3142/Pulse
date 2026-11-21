@@ -16,6 +16,14 @@ const memberSchema = new Schema({
   leftAt:            { type: Date, default: null },
 }, { _id: false });
 
+const lastMessageSchema = new Schema({
+  messageId: { type: ObjectId },
+  senderId:  { type: ObjectId },
+  preview:   { type: String },
+  type:      { type: String },
+  at:        { type: Date },
+}, { _id: false });
+
 const conversationSchema = new Schema({
   type:      { type: String, enum: ['direct', 'group'], required: true },
   directKey: { type: String, default: undefined },
@@ -23,13 +31,9 @@ const conversationSchema = new Schema({
   avatarUrl: { type: String, default: null },
   createdBy: { type: ObjectId, ref: 'User', required: true },
   members:   { type: [memberSchema], validate: [(v) => v.length >= 2 && v.length <= 50, 'members 2-50'] },
-  lastMessage: {
-    messageId: ObjectId,
-    senderId:  ObjectId,
-    preview:   String,
-    type:      String,
-    at:        Date,
-  },
+  // Mongoose pitfall: a nested object that has a key named `type` is read as a type declaration, which silently turned
+  // `lastMessage` into a String. A sub-schema keeps exactly the documented fields (DATABASE_SCHEMA 3.4) and avoids that.
+  lastMessage: { type: lastMessageSchema, default: undefined },
 }, { timestamps: true });
 
 conversationSchema.index({ 'members.user': 1, updatedAt: -1 });

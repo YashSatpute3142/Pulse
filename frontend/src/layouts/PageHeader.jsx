@@ -19,11 +19,14 @@ export function PageHeader({ title, subtitle, actions, showProfile = false, show
   const mobile = useIsMobile();
   const { user } = useAuth();
   const { status } = useSocket();
-  const { activityDocked, activityCollapsed, toggleActivity, openActivityDrawer } = useShell();
-  const showToggle = showActivityToggle && !mobile && (!activityDocked || activityCollapsed);
+  const { activityDocked, activityCollapsed, openActivityDrawer } = useShell();
+  // Docked (>= 1280) and collapsed: the shell pins the toggle to the top-right corner (see AppShell), so keep room for it.
+  // Below 1280 there is no docked panel to line up with, so the toggle stays inline in the header (opens the drawer).
+  const showToggle = showActivityToggle && !mobile && !activityDocked;
+  const reserveCorner = showActivityToggle && !mobile && activityDocked && activityCollapsed;
 
   return (
-    <header className="sticky top-0 z-10 flex min-h-14 items-center gap-3 border-b border-line bg-canvas px-4 md:min-h-0 md:border-b-0 md:px-8 md:pb-2 md:pt-8">
+    <header className={`sticky top-0 z-10 flex min-h-14 items-center gap-3 border-b border-line bg-canvas px-4 md:min-h-0 md:border-b-0 md:px-8 md:pb-2 md:pt-8 ${reserveCorner ? 'md:pr-16' : ''}`}>
       <div className="min-w-0 flex-1">
         <h1 ref={h1} tabIndex={-1} className="truncate font-display text-xl font-semibold text-ink outline-none md:text-[30px] md:leading-tight">{title}</h1>
         {subtitle && <p className="mt-1 hidden font-mono text-[13px] text-ink-muted md:block">{subtitle}</p>}
@@ -31,7 +34,7 @@ export function PageHeader({ title, subtitle, actions, showProfile = false, show
       <div className="flex shrink-0 items-center gap-1">
         {actions}
         {showToggle && (
-          <IconButton label="Show live activity" onClick={activityDocked ? toggleActivity : openActivityDrawer}>
+          <IconButton label="Show live activity" onClick={openActivityDrawer}>
             <PanelRight size={18} strokeWidth={1.5} aria-hidden="true" />
           </IconButton>
         )}

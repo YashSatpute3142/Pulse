@@ -1,10 +1,11 @@
+import dns from 'node:dns';
 import mongoose from 'mongoose';
 import { env } from './env.js';
 import { logger } from '../utils/logger.js';
-import dns from 'node:dns';
 
 mongoose.set('strictQuery', true);
-dns.setServers(['8.8.8.8', '1.1.1.1']);
+
+if (env.DNS_SERVERS) dns.setServers(env.DNS_SERVERS.split(',').map((s) => s.trim()).filter(Boolean));
 
 export async function connectDb(uri = env.MONGODB_URI) {
   mongoose.connection.on('error', (err) => logger.error({ err }, 'mongo connection error'));

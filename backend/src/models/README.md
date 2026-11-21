@@ -4,5 +4,6 @@ These 11 Mongoose models were **initially implemented by Chat 03 (Backend Archit
 
 - Collections, fields, enums, validators and indexes follow the schema section by section (each file names its section). Nothing was redesigned.
 - Only additions beyond the literal schema text: the `pre('validate')` hook on `User` that fills `usernameLower` / `displayNameLower` (the schema says "set in pre-validate"), and the `toJSON` transform (schema principle 8).
+- **Correction found by testing (for Chat 05 / Chat 00):** `DATABASE_SCHEMA.md` 3.4 declares `lastMessage: { messageId, senderId, preview, type: String, at }`. In Mongoose, a nested key named `type` is parsed as the *type declaration*, so `lastMessage` silently became a `String` and every message send failed. `Conversation.js` now uses a sub-schema (`_id: false`) with exactly the documented fields. No field, index or API shape changed; the schema document should note this pitfall.
 - **Chat 05 review: NOT done.** When Chat 05 starts it owns these files (see MASTER_PLAN Section 2): review, adjust through Chat 00, and update `DATABASE_SCHEMA.md` first if anything changes.
 - Verified so far (Chat 03, real MongoDB): all indexes build, including unique, partial and TTL; see `backend/tests/http/models.test.js`. Concurrency, pagination and explain() checks from schema Section 9 are NOT done.

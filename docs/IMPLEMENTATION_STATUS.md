@@ -1,5 +1,5 @@
 # PULSE — IMPLEMENTATION STATUS
-Owner: Chat 00. Update after every Implementation Report. Last updated: 2026-11-20 (Chat 03).
+Owner: Chat 00. Update after every Implementation Report. Last updated: 2026-11-21 (Chat 03).
 
 Legend: ☐ not started · ◐ in progress · ☑ done and tested · ⛔ blocked
 
@@ -43,6 +43,8 @@ Legend: ☐ not started · ◐ in progress · ☑ done and tested · ⛔ blocked
 | 2026-11-16 | 01 | Mobile mockups (conv, activity, focus; dark+light) | Delivered 6 boards, 20 frames, `mobile.html`; `DESIGN_SYSTEM.md` v1.2.1, contrast addendum. Chromium only; DOM audit 0 text failures; keyboard is a placeholder; **APPROVED by owner** (see next row) |
 | 2026-11-16 | 01 | Mobile approval and handoff | Owner approved all 6 mobile mockups (conv, activity, focus x dark, light). `DESIGN_SYSTEM.md` v1.3 records approval. Design handoff to Chat 02 complete; no code written |
 
+| 2026-11-21 | 03 | Friends, Conversations, Messages (history/read), Uploads | Added HTTP for friends, conversations (DM/group, members, mute, read, read-state), message history/single fetch, `POST /uploads` (magic-byte sniffing, 10 MB, Cloudinary adapter), plus `message.service` write functions for Chat 04's WS handlers (send/edit/delete/react/markRead; idempotent on clientId; atomic unread counters). **185 backend tests pass against real mongod** (no DB mocks). **Mocked:** only the storage adapter in upload tests, so the Cloudinary adapter is NOT tested against the real service. Bugs found by tests and fixed: invalid arrayFilter in markRead, 5-attachment cap not enforced, malformed multipart returned 500, `lastMessage` schema (sub-schema needed; documented in models README, Chat 05 to confirm). Frontend: 159 tests + build pass; right-panel toggle UI fix. **Not claimed:** full end-to-end integration; WebSocket (Chat 04) not built |
+| 2026-11-21 | 03 | Activity, Focus Rooms, Polls, Sparks (HTTP + services) | Built at the owner's explicit instruction even though ARCHITECTURE 7 lists Chat 06 for these (**Chat 00 please confirm/accept the ownership change**). HTTP: `GET/PUT/DELETE /activity/me`, `GET /activity/feed`, `GET /focus-rooms`, `/focus-rooms/:id`, `/:id/messages`, `GET /polls/:id`, `GET /sparks/random`. Services for Chat 04's WS handlers: `activity.service` (emits `activity:changed`), `focus.service` (create/invite/join/leave/start/cancel/message/complete, timer helpers `completeRoomIfDue`, `completeDueRooms`, `listRunningRooms`), `poll.service` (create/vote/close), `presence.service` (`setPresenceProvider`, Chat 04 registers live presence). **223 backend tests pass against real mongod** (38 new, no mocks); lint clean. The WS handlers, the timer job and live presence are NOT built (Chat 04). Not claimed: end-to-end integration |
 | 2026-11-20 | 03 | Backend foundation + auth + models | Built `backend/` (see `backend/README.md`). 11 models implemented provisionally from `DATABASE_SCHEMA.md` (**Chat 05 review pending**). Auth, users, health. 100 backend tests pass against a real mongod 8.3.7 (unit: 11, integration: 89; no mocks); lint clean. Frontend regression: 159 tests, lint, build pass. Browser run (Chromium, Vite dev + real backend): register, login, reload-refresh, logout, settings PATCH worked. **Not claimed:** full end-to-end integration (friends, conversations, activity, sockets not built) |
 
 ## Features (backend column = Chat 03 HTTP work; frontend column is not maintained here)
@@ -86,9 +88,11 @@ Desktop (dark+light): main shell, conversation, Live Activity, Focus Room. Mobil
 
 ## Next Actions
 0. ☑ Mobile mockups approved; design phase closed for Chat 01.
-0b. Chat 03: Step 3 Friends and Conversations HTTP, then Uploads, Activity, Focus Rooms, Polls and Sparks.
+0b. Chat 03: Friends, Conversations, Messages, Uploads DONE (2026-11-21). **OWNERSHIP CONFLICT for Chat 00:** Activity, Focus Rooms, Polls, Sparks are assigned to Chat 06 in ARCHITECTURE section 7, so Chat 03 has NOT built them (frontend calls to `/activity/feed` and `/focus-rooms` return 404). Chat 00 to confirm owner. Chat 04 can now build WS on `message.service`/`events.js`.
 0c. Chat 04: WebSocket server (use `consumeTicket` and `SESSION_REVOKED`, see `backend/README.md`).
 0d. Chat 05: review `backend/src/models/*` when it starts.
 1. Owner shares existing code → Chat 00 runs Phase 0 audit and migration map.
 2. Owner answers open questions.
 3. Chat 02 starts the frontend from `pulse-design-v1.2` (needs Phase 1 backend foundation in parallel); Chat 01 reviews built screens against the mockups.
+- Limitations (Chat 03, 2026-11-21): Cloudinary adapter untested against the real service; production needs `npm run db:sync-indexes` (autoIndex off); one block per user pair; `clientId` uniqueness is per conversation (schema index), reuse by another member returns 409; WS-facing write services do not emit events, handlers must broadcast.
+- Provisional defaults added by Chat 03 (not in the contract, easy to change in `constants/limits.js`): focus rooms invite-only (friends), max 20 participants (soft cap), max 20 invitations, max 3 open hosted rooms per user, host leaving a lobby cancels it; activity max expiry 24 h; poll max auto-close 7 days; activity feed lists friends only (an `everyone` activity is not broadcast beyond friends); room chat history is readable only by the host and people who joined.

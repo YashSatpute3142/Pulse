@@ -10,19 +10,23 @@ npm run lint && npm test
 npm run db:sync-indexes  # REQUIRED in production (autoIndex is off there)
 ```
 
-## Implemented so far (Step 1 foundation + Step 2 auth)
+## Implemented so far (Steps 1-4)
 `/health`, `/api/v1/health`, `/api/v1/time`, `/api/v1/auth/{register,login,refresh,logout,ws-ticket,me}`,
 `/api/v1/users/{search,:id}`, `PATCH /users/me`, `PATCH /users/me/settings`, `POST /users/me/password`.
-Friends, conversations, messages history, uploads, activity, focus rooms, polls, sparks: **not started** (return 404).
+`/friends` (list, requests, request/accept/decline, remove, block/unblock), `/conversations` (list, direct, group, patch, members, mute, `:id/messages`, `messages/:mid`, `:id/read`, `:id/read-state`), `POST /uploads`.
+`/activity/{me,feed}`, `/focus-rooms` (list, `:id`, `:id/messages`), `/polls/:id`, `/sparks/random`. (Built at the owner's instruction; ARCHITECTURE section 7 lists Chat 06, pending Chat 00.)
 
 ## Tests
 `npm test` starts a **real mongod** (`$MONGOD_BIN`, else `mongod` on PATH, else downloads one through `mongodb-memory-server`), or uses
 `$MONGODB_TEST_URI` if set. Each test file gets its own database. `tests/unit/*` need no database; `tests/http/*` are
-integration tests (supertest -> Express -> real MongoDB). Nothing is mocked.
+integration tests (supertest -> Express -> real MongoDB). Only file storage is faked in upload/message tests (`createFakeStorage`); the database is always real.
 
 ## For Chat 04 (WebSocket)
 - `services/ticket.service.js` -> `consumeTicket(ticket)` returns `{ userId }` once, or `null`. Use it in the upgrade handler.
 - `utils/events.js` -> subscribe to `EVENTS.SESSION_REVOKED` `{ userId }` (logout / password change) and close that user's sockets.
+- `services/message.service.js` write functions for handlers: `sendMessage`, `editMessage`, `deleteMessage`, `setReaction`, `markRead` (return data to broadcast; they do not emit). `utils/events.js` also emits `FRIEND_UPDATED`, `CONVERSATION_UPDATED`, `CONVERSATION_REMOVED`, `MESSAGE_READ`.
+- Services for WS handlers: `activity.service` (`setActivity`/`clearActivity` EMIT `activity:changed`; `activityAudience` says who to broadcast to), `focus.service` (`createRoom`, `inviteUsers`, `joinRoom`, `leaveRoom`, `startRoom`, `cancelRoom`, `sendRoomMessage`, `completeRoomIfDue`, `completeDueRooms`, `listRunningRooms`; each returns the new room plus an `audience: { participantIds, invitedIds }` to broadcast to), `poll.service` (`createPoll`, `vote`, `closePoll`, each returns `memberIds`).
+- Presence: call `setPresenceProvider(fn)` from `services/presence.service.js` at startup; `GET /activity/feed` then reports live presence (default: everyone offline).
 - Attach point: `src/server.js` (marked comment). Do not import `ws/` from services.
 
 ## Models

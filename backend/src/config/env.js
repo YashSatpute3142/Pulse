@@ -17,6 +17,8 @@ const schema = z
     CLIENT_ORIGINS: z.string().min(1, 'CLIENT_ORIGINS is required'),
     COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).optional(),
     COOKIE_DOMAIN: z.string().optional().default(''),
+    // Optional: comma-separated DNS servers for Node only (fixes querySrv ECONNREFUSED for mongodb+srv:// on some networks).
+    DNS_SERVERS: z.string().optional().default(''),
     TRUST_PROXY: z.coerce.number().int().min(0).default(0),
     // Required in production; optional in dev/test until the Uploads step (see superRefine).
     CLOUDINARY_CLOUD_NAME: z.string().optional().default(''),

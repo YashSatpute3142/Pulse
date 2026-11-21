@@ -20,3 +20,7 @@ export const authLimiter = (max = env.RATE_LIMIT_AUTH_PER_MIN) =>
 /** General limiter: 120/min per authenticated user, per IP when anonymous. */
 export const apiLimiter = (max = env.RATE_LIMIT_API_PER_MIN) =>
   rateLimit({ ...base, limit: max, keyGenerator: (req) => (req.user?.id ? `u:${req.user.id}` : `ip:${ipKeyGenerator(req.ip)}`) });
+
+/** Uploads: 20/min per authenticated user (API_CONTRACT 1). Mount after authenticate. */
+export const uploadLimiter = (max = 20) =>
+  rateLimit({ ...base, limit: max, keyGenerator: (req) => `up:${req.user?.id ?? ipKeyGenerator(req.ip)}` });

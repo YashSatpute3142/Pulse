@@ -14,6 +14,9 @@ Object.assign(process.env, {
   CLIENT_ORIGINS: 'http://localhost:5173',
   BCRYPT_COST: '4',
   LOG_LEVEL: 'silent',
+  CLOUDINARY_CLOUD_NAME: 'testcloud',
+  CLOUDINARY_API_KEY: 'test-key',
+  CLOUDINARY_API_SECRET: 'test-secret',
   RATE_LIMIT_AUTH_PER_MIN: '1000',
   RATE_LIMIT_API_PER_MIN: '1000',
 });

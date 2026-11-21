@@ -97,6 +97,18 @@ describe('constraints hold in the database', () => {
     await M.Conversation.create(mk({ type: 'group', title: 'g1' }));
     await M.Conversation.create(mk({ type: 'group', title: 'g2' }));
   });
+  it('lastMessage is a real object (regression: a nested key named "type" once turned it into a String)', async () => {
+    const [a, b] = [oid(), oid()];
+    const c = await M.Conversation.create({ type: 'group', title: 'lm', createdBy: a, members: [{ user: a }, { user: b }] });
+    const messageId = oid();
+    await M.Conversation.updateOne({ _id: c._id }, { $set: { lastMessage: { messageId, senderId: a, preview: 'hi', type: 'text', at: new Date() } } });
+    const raw = await M.Conversation.collection.findOne({ _id: c._id });
+    expect(raw.lastMessage).toMatchObject({ preview: 'hi', type: 'text' });
+    expect(String(raw.lastMessage.messageId)).toBe(String(messageId));
+    await M.Conversation.updateOne({ _id: c._id }, { $set: { 'lastMessage.preview': 'edited' } });
+    expect((await M.Conversation.findById(c._id).lean()).lastMessage.preview).toBe('edited');
+    expect((await M.Conversation.create({ type: 'group', title: 'none', createdBy: a, members: [{ user: a }, { user: b }] })).lastMessage).toBeUndefined();
+  });
   it('conversation members must be 2-50', async () => {
     const a = oid();
     await expect(M.Conversation.create({ type: 'group', createdBy: a, members: [{ user: a }] })).rejects.toThrow(/members 2-50/);

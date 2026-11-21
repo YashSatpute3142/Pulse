@@ -10,5 +10,12 @@ export const LIMITS = Object.freeze({
   DISPLAY_NAME_MAX: 40,
   BIO_MAX: 160,
   SEARCH_LIMIT: 20,
+  ACTIVITY_LABEL_MAX: 60,
+  ACTIVITY_MAX_EXPIRES_MIN: 24 * 60,
+  ROOM_MAX_INVITES: 20,
+  ROOM_MAX_PARTICIPANTS: 20, // provisional default, not in the contract
+  ROOM_MAX_OPEN_HOSTED: 3,   // provisional default: open (lobby/running) rooms one user may host
+  ROOM_MESSAGE_MAX: 500,
+  POLL_MAX_CLOSE_MIN: 7 * 24 * 60,
   REFRESH_COOKIE_NAME: 'pulse_rt',
 });
