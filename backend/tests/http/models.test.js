@@ -53,15 +53,20 @@ describe('indexes match DATABASE_SCHEMA.md', () => {
     expect(find(await indexes(M.Activity), { userId: 1 }).unique).toBe(true);
     expect(find(await indexes(M.Activity), { expiresAt: 1 }).expireAfterSeconds).toBe(0);
     const fr = await indexes(M.FocusRoom);
-    for (const k of [{ status: 1, endsAt: 1 }, { 'participants.user': 1, status: 1 }, { invited: 1, status: 1 }, { hostId: 1, createdAt: -1 }]) expect(find(fr, k)).toBeTruthy();
+    for (const k of [{ status: 1, endsAt: 1 }, { 'participants.user': 1, status: 1 }, { invited: 1, status: 1 }, { hostId: 1, status: 1, createdAt: -1 }]) expect(find(fr, k)).toBeTruthy();
+    expect(find(fr, { hostId: 1, createdAt: -1 })).toBeFalsy(); // replaced in v1.2
     const rm = await indexes(M.RoomMessage);
     expect(find(rm, { roomId: 1, _id: -1 })).toBeTruthy();
     expect(find(rm, { createdAt: 1 }).expireAfterSeconds).toBe(60 * 60 * 24 * 30);
     expect(find(await indexes(M.Poll), { conversationId: 1, createdAt: -1 })).toBeTruthy();
     expect(find(await indexes(M.CanvasSession), { ownerType: 1, ownerId: 1 }).unique).toBe(true);
     const cs = await indexes(M.CanvasStroke);
-    expect(find(cs, { sessionId: 1, seq: 1 })).toBeTruthy();
+    expect(find(cs, { sessionId: 1, epoch: 1, seq: 1 }).unique).toBe(true);
+    expect(find(cs, { sessionId: 1, strokeId: 1 }).unique).toBe(true);
     expect(find(cs, { createdAt: 1 }).expireAfterSeconds).toBe(60 * 60 * 24 * 14);
+    const up = await indexes(M.Upload);
+    expect(find(up, { url: 1 }).unique).toBe(true);
+    expect(find(up, { expiresAt: 1 }).expireAfterSeconds).toBe(0);
   });
 });
 
@@ -85,6 +90,9 @@ describe('constraints hold in the database', () => {
     const [a, b] = pairKey(oid(), oid());
     await M.Friendship.create({ userA: a, userB: b, requestedBy: a });
     await expect(M.Friendship.create({ userA: a, userB: b, requestedBy: b })).rejects.toMatchObject({ code: 11000 });
+    const [lo, hi] = pairKey(oid(), oid());
+    await expect(M.Friendship.create({ userA: hi, userB: lo, requestedBy: lo })).rejects.toThrow(/userA < userB/); // v1.2 hook: not normalized
+    await expect(M.Friendship.create({ userA: lo, userB: lo, requestedBy: lo })).rejects.toThrow(/userA < userB/); // v1.2 hook: self-pair
     const x = oid(), y = oid();
     expect(pairKey(x, y)).toEqual(pairKey(y, x));
     expect(directKey(x, y)).toBe(directKey(y, x));
@@ -134,7 +142,7 @@ describe('constraints hold in the database', () => {
     await expect(M.FocusRoom.create({ title: 't', hostId: oid(), durationSec: 60 })).rejects.toThrow();
     await expect(M.FocusRoom.create({ title: 't', hostId: oid(), durationSec: 14401 })).rejects.toThrow();
     await M.FocusRoom.create({ title: 't', hostId: oid(), durationSec: 1500 });
-    await expect(M.CanvasStroke.create({ sessionId: oid(), authorId: oid(), seq: 1, color: 'red', size: 4, points: [0, 0] })).rejects.toThrow();
-    await expect(M.CanvasStroke.create({ sessionId: oid(), authorId: oid(), seq: 1, color: '#ff0000', size: 4, points: new Array(2001).fill(0) })).rejects.toThrow(/too many points/);
+    await expect(M.CanvasStroke.create({ sessionId: oid(), authorId: oid(), seq: 1, epoch: 0, color: 'red', size: 4, points: [0, 0] })).rejects.toThrow();
+    await expect(M.CanvasStroke.create({ sessionId: oid(), authorId: oid(), seq: 1, epoch: 0, color: '#ff0000', size: 4, strokeId: 'stroke-0001', points: new Array(2002).fill(0) })).rejects.toThrow(/points must be/);
   });
 });

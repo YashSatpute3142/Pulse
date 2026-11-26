@@ -25,6 +25,6 @@ const focusRoomSchema = new Schema({
 focusRoomSchema.index({ status: 1, endsAt: 1 });
 focusRoomSchema.index({ 'participants.user': 1, status: 1 });
 focusRoomSchema.index({ invited: 1, status: 1 });
-focusRoomSchema.index({ hostId: 1, createdAt: -1 });
+focusRoomSchema.index({ hostId: 1, status: 1, createdAt: -1 }); // v1.2: also serves the "open rooms hosted" count (deploy: npm run db:sync-indexes)
 
 export const FocusRoom = mongoose.models.FocusRoom || mongoose.model('FocusRoom', focusRoomSchema);
