@@ -2,6 +2,7 @@ import http from 'node:http';
 import { env } from './config/env.js';
 import { connectDb, disconnectDb } from './config/db.js';
 import { createApp } from './app.js';
+import { createWsServer } from './ws/index.js';
 import { logger } from './utils/logger.js';
 
 export async function startServer() {
@@ -9,8 +10,7 @@ export async function startServer() {
   const app = createApp();
   const server = http.createServer(app);
 
-  // WebSocket attach point. backend/src/ws/* is owned by Chat 04: when it exists, it attaches here with
-  // `createWsServer(server)` (and closes in shutdown). Intentionally NOT implemented by Chat 03.
+  const wsServer = createWsServer(server); // native ws on the same http.Server (Chat 04)
 
   await new Promise((resolve) => server.listen(env.PORT, resolve));
   logger.info({ port: env.PORT, env: env.NODE_ENV }, 'pulse backend listening');
@@ -22,6 +22,7 @@ export async function startServer() {
     logger.info({ signal }, 'shutting down');
     const force = setTimeout(() => process.exit(1), 10_000);
     force.unref();
+    await wsServer.close();
     server.close(async () => {
       await disconnectDb();
       process.exit(0);

@@ -1,4 +1,4 @@
-# PULSE — WEBSOCKET PROTOCOL v1.0
+# PULSE — WEBSOCKET PROTOCOL v1.0 (+ Phase 3 implementation notes, Section 14)
 Owner: Chat 04 (WebSocket). Consumers: Chat 02, Chat 06. Approved by Chat 00.
 Native `ws` only. **No Socket.IO.**
 
@@ -144,3 +144,44 @@ Max sockets per user: 5 (oldest closed with `4003`). Max frame 16 KB. Max room p
 
 ## 13. Change Process
 New or changed events require: proposal to Chat 00, update of this file, then implementation in `backend/src/ws/handlers` and `frontend/src/socket/handlers`. Event type constants live in `constants/eventTypes.js` on both sides and must match this file.
+
+## 14. Implementation Notes — Phase 3 (Chat 04, 2026-11-22)
+Built: server core, session (`PING`, `REGISTER`) and messaging (`CHAT_MESSAGE`, `MESSAGE_EDIT/DELETE/REACTION/READ`). No event name, envelope or payload above was changed. The items below fill gaps the protocol left open; **each is reported to Chat 00 for confirmation**.
+
+| # | Topic | What the server does | Needs Chat 00 |
+|---|---|---|---|
+| 1 | ACK `data` for `MESSAGE_EDIT/DELETE/REACTION/READ` | Section 5 gives none: sends `data: {}` (the broadcast carries the result). `CHAT_MESSAGE` ACK is `{ message }`; `REGISTER` ACK is `{ presence }` | confirm |
+| 2 | `REGISTER` presence snapshot | **Phase 4:** `{ presence: { <userId>: { status } } }` for friends + online members of the user's conversations; offline users are omitted (frontend treats absent as offline) | none |
+| 3 | Who gets `MESSAGE_NEW/EDITED/DELETED/REACTION_UPDATED` | Every socket of the `memberIds` the service returns for that write, **except the sending socket** (it has the ACK). Delivery does not depend on `conv:<id>` room state, so it is correct the moment membership changes | confirm |
+| 4 | `CONVERSATION_UPDATED` after a new message | **Not** sent per message (a 50-member group would cost 50 reads per message). Sent when a conversation is created/renamed/members change/mute. The frontend already refetches the list (debounced) for unread counts. Protocol text says "unread changed" | **decide**: per-message push or not |
+| 5 | `MESSAGE_READ_UPDATED` audience | Sockets in `conv:<id>`; if the reader has `showReadReceipts=false`, only the reader's own sockets. Needs one `auth.service.me()` read per event | Chat 03 could add `memberIds` + `showReadReceipts` to the `message:read` event to save that read |
+| 6 | Upgrade rejection | HTTP `401` bad/used/expired ticket or inactive user, `403` Origin not in `CLIENT_ORIGINS`, `404` path other than `/ws`, `503` while shutting down. **No `Origin` header is accepted** (non-browser clients, same as HTTP CORS); the ticket is still required | confirm |
+| 7 | `id` on client frames | Required (non-empty string, max 64) on every client frame including `PING` and `TYPING_*`; missing → `ERROR INVALID_ENVELOPE` | confirm |
+| 8 | Not-yet-implemented types | Phase 4+ types get `ERROR UNKNOWN_TYPE`, except no-reply types (`PING`, `TYPING_*`, `CANVAS_UPDATE`) which are dropped silently. `CANVAS_*` stays unregistered until Phase 6 (see `backend/src/ws/handlers/README.md`) | none |
+| 9 | Close code `1011` | Used if connect-time setup fails (DB error loading memberships). Not in Section 1; the frontend treats any unknown code as "reconnect with backoff" | add to table |
+| 10 | Per-socket ordering | Events of one socket are processed strictly in order; at most 50 queued, extra → `ERROR RATE_LIMITED` | confirm |
+| 11 | Frames > 16 KB | `ws` closes the socket with `1009` (before any parsing) | none |
+| 12 | Rate limiter | Token bucket per socket and group as Section 4. Phase 3 had set a 5/10 s `typing` bucket that Section 4 does not contain; **corrected in Phase 4** to a 30/10 s outer abuse bound, with Section 4's rule (1 `TYPING_START` per 2 s per conversation) enforced in `ws/typing.js` | none |
+| 13 | Slow consumers | A socket with > 2 MB unsent is terminated | add to Section 12 |
+
+Registered handlers live in `backend/src/ws/handlers/*.handlers.js`; `ws/index.js` lists them in `ALL_HANDLERS`.
+
+### Phase 4 notes — presence and typing (Chat 04, 2026-11-23)
+Built: `USER_STATUS`, `TYPING_START/STOP`, `PRESENCE_UPDATE`, `TYPING_UPDATE`, the `REGISTER` snapshot, the 20 s offline grace and `lastSeenAt` persistence. No event name, envelope or payload was changed.
+
+| # | Topic | What the server does | Needs Chat 00 / 03 |
+|---|---|---|---|
+| 14 | `lastSeenAt` persistence | No service wrote `User.lastSeenAt`. With the owner's approval Chat 04 added `recordLastSeen(userId, at)` to `presence.service.js` (one atomic `$max` update, so it can never move backwards). It is saved when the grace period ends, even for users with `showPresence=false` | **Chat 03: review/adopt** |
+| 15 | `showPresence` changed while connected | Takes effect at the user's next presence change (connect, away, offline). No service event announces a settings change | **Chat 03: emit e.g. `user:settings`** so the change is instant |
+| 16 | Blocked users | Presence goes to friends and to online members of shared conversations; typing to members of the conversation. A block does not (yet) hide presence or typing between two members of the same group or DM | **decide** the rule; needs a block check from a service |
+| 17 | `lastSeenAt` for users already offline | Only sent inside the offline `PRESENCE_UPDATE`. No HTTP serializer exposes `lastSeenAt` and the snapshot omits offline users, so "last seen" cannot be shown for someone who was offline before you connected | **decide** whether Chat 03 should expose it |
+| 18 | Status model | Per socket: `online`/`away`. User: `online` if any tab is online, `away` if all are, offline after the 20 s grace. Any client event except `PING` and `USER_STATUS` returns that socket to `online` | confirm |
+| 19 | `PRESENCE_UPDATE` audience | Friends (`listFriends`) + online members of the conversations the user is in (socket rooms), never the user. Costs one friends read per presence change, none per message | confirm |
+| 20 | Typing | Every accepted `TYPING_START` is relayed (the client resends every 3 s and expires entries after 6 s), re-arms the 5 s auto-stop and is limited to one relay per 2 s per socket and conversation (extra STARTs only re-arm). Typing stops at once when the user's last socket closes. Sender's own tabs never receive it. A socket that is not in `conv:<id>` is ignored without an ERROR | confirm |
+| 21 | Scale | Presence and typing state is in memory (single instance, D8) | none |
+| 22 | Phase 5 delivery model | Room events (`ROOM_*`, `POLL_*`) go to the audience user ids returned by the service, i.e. all tabs of those users, **including the sender's other tabs and the sender** for room events (the frontend updates state from events). `focus:<id>` sockets are used for timer drift ticks only. | none |
+| 23 | Polls | `POLL_CREATE` ACK `{poll, message}`; `POLL_CREATED` to members except the sender socket. `POLL_VOTE` ACK `{pollId, counts, myVote, closedAt}`; `POLL_UPDATED {pollId, counts, closedAt}` to others. The voter's other tabs get counts only (no `myVote`). `POLL_CLOSE` ACK + `POLL_UPDATED` to all including the closer. Expiry by time emits no event (the frontend hides it locally). | Chat 00: confirm |
+| 24 | Activity | `ACTIVITY_UPDATE` ACK `{activity}`, `ACTIVITY_CLEAR` ACK `{}`. `ACTIVITY_CHANGED` (service event) fans out: visibility `nobody` gives friends `null` and the owner the real value; clear gives everyone `null`. Time expiry emits no event. | none |
+| 25 | Focus rooms | Handlers: `ROOM_CREATE/INVITE/JOIN/LEAVE/START/CANCEL/MESSAGE`; events `ROOM_INVITED`, `ROOM_STATE {room, serverNow}`, `ROOM_PARTICIPANT_JOINED/LEFT`, `ROOM_MESSAGE_NEW`, `ROOM_TIMER_UPDATE`, `ROOM_COMPLETED`, `ROOM_CANCELLED` (also sent to invited users). `ROOM_JOIN` ACK `{room, messages, serverNow}` with `serverNow` in epoch ms. Authorization, limits (3 open rooms per host, 20 participants, provisional) come from Chat 03 services. Disconnect does not remove a participant. User objects are picked so email is not leaked. | Chat 00/03: confirm limits |
+| 26 | Server timer | `jobs/focusTimer.js`: one precise timeout per running room, 15 s drift ticks, sweep every 4th tick (60 s), re-armed from MongoDB at startup, atomic `completeRoomIfDue` so completion fires once. Single instance (D8). | none |
+| 27 | Canvas (Phase 6) | Still deferred. Integration point documented in `ws/handlers/README.md`. Blocked on a canvas service and a stroke format. `CANVAS_*` types stay silent no-reply. | Chat 00/03 |

@@ -1,6 +1,6 @@
 # Pulse backend (Chat 03)
 
-Node 20+ · Express 5 (ESM) · Mongoose 8 · zod · JWT + rotating refresh tokens. HTTP only: `src/ws/*` belongs to Chat 04.
+Node 20+ · Express 5 (ESM) · Mongoose 8 · zod · JWT + rotating refresh tokens. HTTP + services. `src/ws/*` (WebSocket, native `ws`) belongs to Chat 04; Phase 3 (core + messaging) is built, see `src/ws/handlers/README.md`.
 
 ```
 cp .env.example .env     # set a real MONGODB_URI and two different secrets
@@ -31,3 +31,6 @@ integration tests (supertest -> Express -> real MongoDB). Only file storage is f
 
 ## Models
 `src/models/*` are provisional: see `src/models/README.md` (Chat 05 review pending).
+
+## WebSocket (Chat 04, Phase 3)
+`src/ws/index.js` `createWsServer(httpServer)` is attached in `server.js` and closed first on shutdown. Protocol: `docs/WEBSOCKET_PROTOCOL.md` (Section 14 lists clarifications). Tests: `tests/ws/*` use a real `ws` client against the real app and real MongoDB.

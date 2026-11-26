@@ -23,3 +23,12 @@ export async function getPresence(userIds) {
   }
   return out;
 }
+
+/**
+ * Persist the moment a user's last socket went away (protocol 8). Added by Chat 04 for Phase 4 because no service wrote User.lastSeenAt;
+ * flagged for Chat 03 review. Atomic and monotonic: $max means a late/duplicate call can never move lastSeenAt backwards.
+ */
+export async function recordLastSeen(userId, at = new Date()) {
+  await User.updateOne({ _id: userId }, { $max: { lastSeenAt: at } });
+  return at;
+}
